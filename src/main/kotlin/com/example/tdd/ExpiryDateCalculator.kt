@@ -7,12 +7,13 @@ import java.time.LocalDate
 class ExpiryDateCalculator {
 
     fun calculateExpiryDate(payData: PayData): LocalDate {
+        val addedMonths = 1L
         if (payData.firstBillingDate != null) {
-            val candidateExp = payData.billingDate.plusMonths(1)
+            val candidateExp = payData.billingDate.plusMonths(addedMonths)
             if (payData.firstBillingDate.dayOfMonth != candidateExp.dayOfMonth) {
                 return candidateExp.withDayOfMonth(payData.firstBillingDate.dayOfMonth)
             }
         }
-        return payData.billingDate.plusMonths(1)
+        return payData.billingDate.plusMonths(addedMonths)
     }
 }
