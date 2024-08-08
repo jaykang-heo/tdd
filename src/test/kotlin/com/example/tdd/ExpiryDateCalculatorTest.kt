@@ -33,6 +33,8 @@ class ExpiryDateCalculatorTest {
     fun `when pay date different, pay 10,000`() {
         val payData = PayData(LocalDate.of(2019, 1, 31), LocalDate.of(2019, 2, 28), 10_000)
         assertExpiryDate(payData, LocalDate.of(2019, 3, 31))
+        val payData2 = PayData(LocalDate.of(2019, 1, 30), LocalDate.of(2019, 2, 28), 10_000)
+        assertExpiryDate(payData2, LocalDate.of(2019, 3, 30))
     }
 
     private fun assertExpiryDate(payData: PayData, expectedExpiryDate: LocalDate) {
