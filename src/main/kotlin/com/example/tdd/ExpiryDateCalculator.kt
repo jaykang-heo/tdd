@@ -6,7 +6,7 @@ import java.time.LocalDate
 @Service
 class ExpiryDateCalculator {
 
-    fun calculateExpiryDate(date: LocalDate, payAmount: Int): LocalDate {
-        return LocalDate.of(2019, 4, 1)
+    fun calculateExpiryDate(billingDate: LocalDate, payAmount: Int): LocalDate {
+        return billingDate.plusMonths(1)
     }
 }
