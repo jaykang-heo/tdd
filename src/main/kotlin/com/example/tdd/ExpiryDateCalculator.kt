@@ -2,6 +2,7 @@ package com.example.tdd
 
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.time.YearMonth
 
 @Service
 class ExpiryDateCalculator {
@@ -11,6 +12,9 @@ class ExpiryDateCalculator {
         if (payData.firstBillingDate != null) {
             val candidateExp = payData.billingDate.plusMonths(addedMonths)
             if (payData.firstBillingDate.dayOfMonth != candidateExp.dayOfMonth) {
+                if (YearMonth.from(candidateExp).lengthOfMonth() < payData.firstBillingDate.dayOfMonth) {
+                    return candidateExp.withDayOfMonth(YearMonth.from(candidateExp).lengthOfMonth())
+                }
                 return candidateExp.withDayOfMonth(payData.firstBillingDate.dayOfMonth)
             }
         }
