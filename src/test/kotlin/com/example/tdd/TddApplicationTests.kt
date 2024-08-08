@@ -9,5 +9,4 @@ class TddApplicationTests {
     @Test
     fun contextLoads() {
     }
-
 }
