@@ -18,6 +18,15 @@ class ExpiryDateCalculatorTest {
         assertExpiryDate(LocalDate.of(2019, 5, 5), 10_000, LocalDate.of(2019, 6, 5))
     }
 
+    @ParameterizedTest
+    @AutoSource
+    @DisplayName("납부일과 한달 뒤 일자가 같지 않음")
+    fun `when pay 10,000, expiry date does not match`() {
+        assertExpiryDate(LocalDate.of(2019, 1, 31), 10_000, LocalDate.of(2019, 2, 28))
+        assertExpiryDate(LocalDate.of(2019, 5, 31), 10_000, LocalDate.of(2019, 6, 30))
+        assertExpiryDate(LocalDate.of(2020, 1, 31), 10_000, LocalDate.of(2020, 2, 29))
+    }
+
     private fun assertExpiryDate(billingDate: LocalDate, payAmount: Int, expectedExpiryDate: LocalDate) {
         val cal = ExpiryDateCalculator()
         val realExpiryDate = cal.calculateExpiryDate(billingDate, payAmount)
