@@ -8,7 +8,11 @@ import java.time.YearMonth
 class ExpiryDateCalculator {
 
     fun calculateExpiryDate(payData: PayData): LocalDate {
-        val addedMonths = payData.payAmount / 10_000L
+        val addedMonths = if (payData.payAmount == 100_000) {
+            12
+        } else {
+            payData.payAmount / 10_000L
+        }
         if (payData.firstBillingDate != null) {
             return expiryDateUsingFirstBillingDate(payData, addedMonths)
         } else {
