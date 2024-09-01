@@ -1,10 +1,8 @@
 package com.example.tdd
 
-import autoparams.AutoSource
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
-import org.junit.jupiter.params.ParameterizedTest
 import java.time.LocalDate
 import kotlin.test.assertEquals
 
@@ -22,7 +20,7 @@ class Chapter10Test {
         return "${date.year}년${date.monthValue.toString().padStart(2, '0')}월${date.dayOfMonth.toString().padStart(2, '0')}일"
     }
 
-    val answers = listOf(1,2,3,4)
+    val answers = listOf(1, 2, 3, 4)
     val respondentId = 100L
     private val surveyRepository = object : SurveyRepository {
         override fun save(survey: Survey) = survey
@@ -43,21 +41,21 @@ class Chapter10Test {
 
         // 설문 답변
         val surveyAnswer = SurveyAnswerRequest(
-            surveyId = survey.id,
-            respondentId = respondentId,
-            answers = answers
+            surveyId = 1L,
+            respondentId = 100L,
+            answers = listOf(1, 2, 3, 4)
         )
         svc.answerSurvey(surveyAnswer)
 
         // 저장 결과 확인
-        val savedAnswer = surveyAnswerRepository.findBySurveyAndRespondent(survey.id, respondentId)
+        val savedAnswer = surveyAnswerRepository.findBySurveyAndRespondent(1L, 100L)
         assertAll(
-            { assertEquals(respondentId, savedAnswer?.respondentId) },
-            { assertEquals(answers.size, savedAnswer?.answers?.size) },
-            { assertEquals(answers[0], savedAnswer?.answers?.get(0)) },
-            { assertEquals(answers[1], savedAnswer?.answers?.get(1)) },
-            { assertEquals(answers[2], savedAnswer?.answers?.get(2)) },
-            { assertEquals(answers[2], savedAnswer?.answers?.get(3)) }
+            { assertEquals(100L, savedAnswer?.respondentId) },
+            { assertEquals(4, savedAnswer?.answers?.size) },
+            { assertEquals(1, savedAnswer?.answers?.get(0)) },
+            { assertEquals(2, savedAnswer?.answers?.get(1)) },
+            { assertEquals(3, savedAnswer?.answers?.get(2)) },
+            { assertEquals(4, savedAnswer?.answers?.get(3)) }
         )
     }
 }
