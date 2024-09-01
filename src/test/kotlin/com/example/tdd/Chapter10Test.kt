@@ -1,61 +1,56 @@
-// 실패 환경이 다르다고 실패하지 않기
-
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.condition.EnabledOnOs
-import org.junit.jupiter.api.condition.DisabledOnOs
-import org.junit.jupiter.api.condition.OS
-import java.nio.file.Files
-import java.nio.file.Paths
-import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assertions.*
+import java.time.LocalDateTime
 
-class BulkLoaderTest {
-    private val bulkFilePath = "src/test/resources/bulk.txt"
+// 실행 시점이 다르다고 실패하지 않기
 
-    @Test
-    fun load() {
-        val loader = BulkLoader()
-        loader.load(bulkFilePath)
-        // Add assertions here to verify the load operation
+class Member private constructor(private val expiryDate: LocalDateTime) {
+    fun isExpired(): Boolean {
+        return expiryDate.isBefore(LocalDateTime.now())
+    }
+
+    fun passedExpiryDate(time: LocalDateTime): Boolean {
+        return expiryDate.isBefore(time)
+    }
+
+    companion object {
+        fun builder() = Builder()
+    }
+
+    class Builder {
+        private var expiryDate: LocalDateTime? = null
+
+        fun expiryDate(date: LocalDateTime) = apply { this.expiryDate = date }
+        fun build() = expiryDate?.let { Member(it) } ?: throw IllegalStateException("Expiry date must be set")
     }
 }
 
-class ExporterTest {
+class MemberTest {
     @Test
-    fun export() {
-        val folder = System.getProperty("java.io.tmpdir")
-        val exporter = Exporter(folder)
-        exporter.export("file.txt")
-
-        val path = Paths.get(folder, "file.txt")
-        assertTrue(Files.exists(path))
-    }
-}
-
-class OsSpecificTest {
-    @Test
-    @EnabledOnOs(OS.LINUX, OS.MAC)
-    fun callBash() {
-        // Test bash-specific operations
+    fun notExpired() {
+        val expiry = LocalDateTime.of(2019, 12, 31, 0, 0, 0)
+        val m = Member.builder().expiryDate(expiry).build()
+        assertFalse(m.isExpired())
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)
-    fun changeMode() {
-        // Test file permission changes (not applicable on Windows)
+    fun notExpiredFarFuture() {
+        val expiry = LocalDateTime.of(2099, 12, 31, 0, 0, 0)
+        val m = Member.builder().expiryDate(expiry).build()
+        assertFalse(m.isExpired())
     }
-}
 
-// Simulated classes to make the tests work
-class Exporter(private val folder: String) {
-    fun export(fileName: String) {
-        Files.createFile(Paths.get(folder, fileName))
+    @Test
+    fun notExpiredPassedExpiryDate() {
+        val expiry = LocalDateTime.of(2019, 12, 31, 0, 0, 0)
+        val m = Member.builder().expiryDate(expiry).build()
+        assertFalse(m.passedExpiryDate(LocalDateTime.of(2019, 12, 30, 0, 0, 0)))
     }
-}
 
-class BulkLoader {
-    fun load(filePath: String) {
-        // Simulate loading a bulk file
-        println("Loading file from: $filePath")
+    @Test
+    fun expired_Only_1ms() {
+        val expiry = LocalDateTime.of(2019, 12, 31, 0, 0, 0)
+        val m = Member.builder().expiryDate(expiry).build()
+        assertTrue(m.passedExpiryDate(LocalDateTime.of(2019, 12, 31, 0, 0, 0, 1000000)))
     }
 }
