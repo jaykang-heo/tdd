@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
 import org.mockito.ArgumentCaptor
 import org.mockito.BDDMockito
+import org.mockito.BDDMockito.then
 import org.mockito.Mockito.mock
 import java.time.LocalDate
 import kotlin.test.assertEquals
@@ -84,6 +85,28 @@ class Chapter10Test {
         // 검증 2: 이메일 발송을 요청했는지 검증
         val captor = ArgumentCaptor.forClass(String::class.java)
         BDDMockito.then(mockEmailNotifier).should().sendRegisteredEmail(captor.capture())
+
+        val realEmail = captor.value
+        assertEquals("email@email.com", realEmail)
+    }
+
+    @Test
+    @DisplayName("같은 ID가 없으면 가입 성공함")
+    fun noDupId_RegisterSuccess() {
+        userRegister.register("id", "pw", "email")
+
+        val savedUser = fakeRepository.findById("id")!!
+        assertEquals("id", savedUser.id)
+        assertEquals("email", savedUser.email)
+    }
+
+    @Test
+    @DisplayName("가입하면 메일을 전송함")
+    fun whenRegisterThenSendEmail() {
+        userRegister.register("id", "pw", "email")
+
+        val captor = ArgumentCaptor.forClass(String::class.java)
+        then(mockEmailNotifier).should().sendRegisteredEmail(captor.capture())
 
         val realEmail = captor.value
         assertEquals("email@email.com", realEmail)
