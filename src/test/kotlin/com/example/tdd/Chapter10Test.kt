@@ -4,6 +4,7 @@ import EmailNotifier
 import FakeUserRepository
 import UserRegister
 import net.bytebuddy.asm.Advice.Argument
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
@@ -123,20 +124,21 @@ class Chapter10Test {
 //        assertThrows<WeakPasswordException> { userRegister.register("id", "pw", "email") }
 //    }
 
-    // 과도하게 구현 검증하지 않기
-    @Test
-    @DisplayName("회원 가입시 암호 검사 수행함")
-    fun checkPassword() {
-        userRegister.register("id", "pw", "email")
+//    // 과도하게 구현 검증하지 않기
+//    @Test
+//    @DisplayName("회원 가입시 암호 검사 수행함")
+//    fun checkPassword() {
+//        userRegister.register("id", "pw", "email")
+//
+//        // PasswordChecker#checkPasswordWeak() 메서드 호출 여부 검사
+//        BDDMockito.then(mockPasswordChecker)
+//            .should()
+//            .checkPasswordWeak(Mockito.anyString())
+//
+//        // UserRepository#findById() 메서드를 호출하지 않는 것을 검사
+//        BDDMockito.then(mockRepository)
+//            .should(Mockito.never())
+//            .findById(Mockito.anyString())
+//    }
 
-        // PasswordChecker#checkPasswordWeak() 메서드 호출 여부 검사
-        BDDMockito.then(mockPasswordChecker)
-            .should()
-            .checkPasswordWeak(Mockito.anyString())
-
-        // UserRepository#findById() 메서드를 호출하지 않는 것을 검사
-        BDDMockito.then(mockRepository)
-            .should(Mockito.never())
-            .findById(Mockito.anyString())
-    }
 }
