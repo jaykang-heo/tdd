@@ -7,6 +7,7 @@ import net.bytebuddy.asm.Advice.Argument
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
+import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentCaptor
 import org.mockito.BDDMockito
 import org.mockito.BDDMockito.then
@@ -110,5 +111,14 @@ class Chapter10Test {
 
         val realEmail = captor.value
         assertEquals("email@email.com", realEmail)
+    }
+
+    @Test
+    @DisplayName("약한 암호면 가입 실패")
+    fun weakPassword() {
+        BDDMockito.given(mockPasswordChecker.checkPasswordWeak("pw"))
+            .willReturn(true)
+
+        assertThrows<WeakPasswordException> { userRegister.register("id", "pw", "email") }
     }
 }
