@@ -1,121 +1,71 @@
-import java.time.LocalDateTime
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.*
 
-enum class SurveyStatus { READY, OPEN }
+enum class ItemType { ADMIN, USER }
 
-data class Item(val number: Int, val text: String)
+data class Item(val type: ItemType)
 
-data class Question(val number: Int, val text: String, val items: List<Item>)
+class Translator {
+    private val translations = mapOf("cat" to "고양이")
 
-data class Survey(
-    val id: Long,
-    val title: String,
-    val status: SurveyStatus,
-    val endOfPeriod: LocalDateTime,
-    val questions: List<Question>
-)
+    fun translate(word: String): String {
+        return translations[word] ?: word
+    }
 
-class SurveyBuilder {
-    private var id: Long = 0
-    private var title: String = ""
-    private var status: SurveyStatus = SurveyStatus.READY
-    private var endOfPeriod: LocalDateTime = LocalDateTime.now().plusDays(5)
-    private var questions: MutableList<Question> = mutableListOf()
-
-    fun id(id: Long) = apply { this.id = id }
-    fun title(title: String) = apply { this.title = title }
-    fun status(status: SurveyStatus) = apply { this.status = status }
-    fun endOfPeriod(endOfPeriod: LocalDateTime) = apply { this.endOfPeriod = endOfPeriod }
-    fun questions(questions: List<Question>) = apply { this.questions = questions.toMutableList() }
-
-    fun open() = apply { this.status = SurveyStatus.OPEN }
-
-    fun build() = Survey(id, title, status, endOfPeriod, questions)
-}
-
-object TestSurveyFactory {
-    fun createAnswerableSurvey(id: Long): Survey {
-        return SurveyBuilder()
-            .id(id)
-            .status(SurveyStatus.OPEN)
-            .endOfPeriod(LocalDateTime.now().plusDays(5))
-            .questions(listOf(
-                Question(1, "질문1", listOf(Item(1, "보기1"), Item(2, "보기2"))),
-                Question(2, "질문2", listOf(Item(1, "답1"), Item(2, "답2")))
-            ))
-            .build()
+    fun contains(word: String): Boolean {
+        return translations.containsKey(word)
     }
 }
 
-class TestSurveyBuilder {
-    private val builder = SurveyBuilder()
-
-    init {
-        builder.id(1L)
-            .title("제목")
-            .endOfPeriod(LocalDateTime.now().plusDays(5))
-            .questions(listOf(
-                Question(1, "질문1", listOf(Item(1, "보기1"), Item(2, "보기2"))),
-                Question(2, "질문2", listOf(Item(1, "답1"), Item(2, "답2")))
-            ))
-    }
-
-    fun id(id: Long) = apply { builder.id(id) }
-    fun title(title: String) = apply { builder.title(title) }
-    fun open() = apply { builder.open() }
-    fun build() = builder.build()
-}
-
-// Test setup
-class MemorySurveyRepository {
-    private val surveys = mutableMapOf<Long, Survey>()
-
-    fun save(survey: Survey) {
-        surveys[survey.id] = survey
-    }
-
-    fun findById(id: Long): Survey? = surveys[id]
-}
-
-class SurveyService(private val repository: MemorySurveyRepository) {
-    fun answer(surveyId: Long, answers: List<Int>) {
-        // Implementation omitted for brevity
+class ItemService {
+    fun getItems(): List<Item> {
+        return listOf(Item(ItemType.ADMIN), Item(ItemType.USER))
     }
 }
 
-// Test code
-class SurveyTest {
-    private val memoryRepository = MemorySurveyRepository()
-    private val answerService = SurveyService(memoryRepository)
-
-    fun testAnswer() {
-        // Setup
-        val survey = TestSurveyFactory.createAnswerableSurvey(1L)
-        memoryRepository.save(survey)
-
-        // Execute
-        answerService.answer(1L, listOf(1, 2))
-
-        // Assert
-        // Add your assertions here
+class TranslatorTest {
+    @Test
+    fun canTranslateBasicWord() {
+        val tr = Translator()
+        assertTranslationOfBasicWord(tr, "cat")
     }
 
-    fun testCreateSurvey() {
-        val survey = TestSurveyBuilder()
-            .id(10L)
-            .title("새로운 제목")
-            .open()
-            .build()
+    private fun assertTranslationOfBasicWord(tr: Translator, word: String) {
+        assertTrue(tr.contains(word))
+        assertEquals("고양이", tr.translate(word))
+    }
+}
 
-        memoryRepository.save(survey)
+class ItemServiceTest {
+    private val itemService = ItemService()
 
-        // Assert
-        // Add your assertions here
+    @Test
+    fun firstShoulBeAdminItem() {
+        givenAdminItem()
+        givenUserItem()
+
+        val items = itemService.getItems()
+
+        assertTrue(items.size > 0)
+        assertEquals(ItemType.ADMIN, items[0].type)
+        assertEquals(ItemType.USER, items[1].type)
+    }
+
+    private fun givenAdminItem() {
+        // In a real scenario, this would add an admin item to the service
+    }
+
+    private fun givenUserItem() {
+        // In a real scenario, this would add a user item to the service
     }
 }
 
 fun main() {
-    val test = SurveyTest()
-    test.testAnswer()
-    test.testCreateSurvey()
-    println("Tests completed")
+    val translatorTest = TranslatorTest()
+    translatorTest.canTranslateBasicWord()
+
+    val itemServiceTest = ItemServiceTest()
+    itemServiceTest.firstShoulBeAdminItem()
+
+    println("All tests passed!")
 }
