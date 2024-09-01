@@ -11,6 +11,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentCaptor
 import org.mockito.BDDMockito
 import org.mockito.BDDMockito.then
+import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import java.time.LocalDate
 import kotlin.test.assertEquals
@@ -116,7 +117,7 @@ class Chapter10Test {
     @Test
     @DisplayName("약한 암호면 가입 실패")
     fun weakPassword() {
-        BDDMockito.given(mockPasswordChecker.checkPasswordWeak("pw"))
+        BDDMockito.given(mockPasswordChecker.checkPasswordWeak(Mockito.anyString()))
             .willReturn(true)
 
         assertThrows<WeakPasswordException> { userRegister.register("id", "pw", "email") }
