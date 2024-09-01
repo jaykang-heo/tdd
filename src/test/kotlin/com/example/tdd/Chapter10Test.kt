@@ -1,76 +1,61 @@
-import org.junit.jupiter.api.BeforeEach
+// 실패 환경이 다르다고 실패하지 않기
+
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.stereotype.Component
+import org.junit.jupiter.api.condition.EnabledOnOs
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
+import java.nio.file.Files
+import java.nio.file.Paths
+import kotlin.test.assertTrue
 
-// 통합 테스트의 상황 설정을 위한 보조 클래스 사용하기
-// 10.14 통합 테스트를 위한 상황 설정 클래스
-// 10.15 상황 보조 클래스를 이용한 상황 설정
-@Component
-class UserGivenHelper(private val jdbcTemplate: JdbcTemplate) {
-    fun givenUser(id: String, pw: String, email: String) {
-        jdbcTemplate.update("""
-            insert into user values (?, ?, ?) 
-            on duplicate key update password = ?, email = ?
-        """, id, pw, email, pw, email)
+class BulkLoaderTest {
+    private val bulkFilePath = "src/test/resources/bulk.txt"
+
+    @Test
+    fun load() {
+        val loader = BulkLoader()
+        loader.load(bulkFilePath)
+        // Add assertions here to verify the load operation
     }
 }
 
-@SpringBootTest
-class UserRegistrationTest {
-    @Autowired
-    private lateinit var jdbcTemplate: JdbcTemplate
+class ExporterTest {
+    @Test
+    fun export() {
+        val folder = System.getProperty("java.io.tmpdir")
+        val exporter = Exporter(folder)
+        exporter.export("file.txt")
 
-    @Autowired
-    private lateinit var given: UserGivenHelper
+        val path = Paths.get(folder, "file.txt")
+        assertTrue(Files.exists(path))
+    }
+}
 
-    @Autowired
-    private lateinit var register: UserRegister
-
-    @BeforeEach
-    fun setUp() {
-        given = UserGivenHelper(jdbcTemplate)
+class OsSpecificTest {
+    @Test
+    @EnabledOnOs(OS.LINUX, OS.MAC)
+    fun callBash() {
+        // Test bash-specific operations
     }
 
     @Test
-    fun dupId() {
-        // Given
-        given.givenUser("cbk", "pw", "cbk@cbk.com")
-
-        // When & Then
-        assertThrows<DupIdException> {
-            register.register("cbk", "strongpw", "email@email.com")
-        }
+    @DisabledOnOs(OS.WINDOWS)
+    fun changeMode() {
+        // Test file permission changes (not applicable on Windows)
     }
 }
 
-// These interfaces and classes are assumed to exist in your codebase
-interface UserRegister {
-    fun register(id: String, password: String, email: String)
+// Simulated classes to make the tests work
+class Exporter(private val folder: String) {
+    fun export(fileName: String) {
+        Files.createFile(Paths.get(folder, fileName))
+    }
 }
 
-class DupIdException : RuntimeException()
-
-// Example implementation of UserRegister (you would need to implement this)
-@Component
-class UserRegisterImpl(private val jdbcTemplate: JdbcTemplate) : UserRegister {
-    override fun register(id: String, password: String, email: String) {
-        val count = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM user WHERE id = ?",
-            Int::class.java,
-            id
-        ) ?: 0
-
-        if (count > 0) {
-            throw DupIdException()
-        }
-
-        jdbcTemplate.update(
-            "INSERT INTO user (id, password, email) VALUES (?, ?, ?)",
-            id, password, email
-        )
+class BulkLoader {
+    fun load(filePath: String) {
+        // Simulate loading a bulk file
+        println("Loading file from: $filePath")
     }
 }
