@@ -1,76 +1,54 @@
-package com.example.tdd
-
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.junit.jupiter.api.Assertions.*
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-// 셋업을 이용해서 중복된 상황을 설정하지 않기
-// 10.10 상황 관련 코드의 중복을 제거한 예
-@SpringBootTest
+// 10.11 각 테스트 메서드가 자신에 맞게 상황을 설정하는 코드
 class ChangeUserServiceTest {
 
-    @Autowired
-    lateinit var memoryRepository: MemoryRepository
+    private lateinit var changeService: ChangeUserService
+    private lateinit var memoryRepository: MemoryRepository
 
-    @Autowired
-    lateinit var changeService: ChangeUserService
-
-    @Test
+    @BeforeEach
     fun setUp() {
+        memoryRepository = MemoryRepository()
         changeService = ChangeUserService(memoryRepository)
-        memoryRepository.save(
-            User("id", "name", "pw", Address("서울", "남부"))
-        )
     }
 
     @Test
     fun noUser() {
         assertThrows<UserNotFoundException> {
-            changeService.changeAddress("id2", Address("서울", "남부"))
+            changeService.changeAddress("id", Address("서울", "남부"))
         }
     }
 
     @Test
     fun changeAddress() {
-        changeService.changeAddress("id", Address("서울", "남부"))
+        memoryRepository.save(
+            User("id", "name", "pw", Address("서울", "남부"))
+        )
+
+        changeService.changeAddress("id", Address("경기", "남부"))
+
         val user = memoryRepository.findById("id")
-        assertEquals("서울", user?.address?.city)
+        assertEquals("경기", user?.address?.city)
     }
 
     @Test
     fun changePw() {
-        changeService.changePw("id", "pw", "newpw")
+        memoryRepository.save(
+            User("id", "name", "oldpw", Address("서울", "남부"))
+        )
+
+        changeService.changePw("id", "oldpw", "newpw")
+
         val user = memoryRepository.findById("id")
         assertTrue(user?.matchPassword("newpw") ?: false)
     }
-
-    @Test
-    fun pwNotMatch() {
-        assertThrows<IdPwNotMatchException> {
-            changeService.changePw("id", "pw2", "newpw")
-        }
-    }
 }
 
-// Required data classes and interfaces
-data class User(
-    val id: String,
-    val name: String,
-    private var password: String,
-    var address: Address
-) {
-    fun matchPassword(pw: String): Boolean = this.password == pw
-}
-
-data class Address(val city: String, val district: String)
-
-interface MemoryRepository {
-    fun save(user: User)
-    fun findById(id: String): User?
-}
-
+// Supporting classes and interfaces
 class ChangeUserService(private val repository: MemoryRepository) {
     fun changeAddress(id: String, newAddress: Address) {
         val user = repository.findById(id) ?: throw UserNotFoundException()
@@ -80,12 +58,35 @@ class ChangeUserService(private val repository: MemoryRepository) {
 
     fun changePw(id: String, currentPw: String, newPw: String) {
         val user = repository.findById(id) ?: throw UserNotFoundException()
-        if (!user.matchPassword(currentPw)) throw IdPwNotMatchException()
-        // Assuming there's a method to change password in User class
-        // user.changePassword(newPw)
+        if (!user.matchPassword(currentPw)) throw IdPasswordNotMatchException()
+        user.changePassword(newPw)
         repository.save(user)
     }
 }
 
+class MemoryRepository {
+    private val users = mutableMapOf<String, User>()
+
+    fun save(user: User) {
+        users[user.id] = user
+    }
+
+    fun findById(id: String): User? = users[id]
+}
+
+data class User(
+    val id: String,
+    val name: String,
+    private var password: String,
+    var address: Address
+) {
+    fun matchPassword(pw: String): Boolean = password == pw
+    fun changePassword(newPw: String) {
+        password = newPw
+    }
+}
+
+data class Address(val city: String, val district: String)
+
 class UserNotFoundException : RuntimeException()
-class IdPwNotMatchException : RuntimeException()
+class IdPasswordNotMatchException : RuntimeException()
