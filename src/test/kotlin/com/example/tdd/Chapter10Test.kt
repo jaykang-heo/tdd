@@ -13,7 +13,7 @@ class Chapter10Test {
     fun dateFormat() {
         val date = LocalDate.of(1945, 8, 15)
         val dateStr = formatDate(date)
-        val expected = date.year.toString() + "년" + date.month + "월"+ date.dayOfMonth + "일"
+        val expected = "1945년8월15일"
         assertEquals(expected, dateStr)
     }
 
