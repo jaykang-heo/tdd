@@ -1,144 +1,48 @@
-package com.example.tdd
-
-import EmailNotifier
-import FakeUserRepository
-import UserRegister
-import net.bytebuddy.asm.Advice.Argument
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertThrows
-import org.mockito.ArgumentCaptor
-import org.mockito.BDDMockito
-import org.mockito.BDDMockito.then
-import org.mockito.Mockito
-import org.mockito.Mockito.mock
-import java.time.LocalDate
-import kotlin.test.assertEquals
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.context.jdbc.Sql
 
-class Chapter10Test {
+@SpringBootTest
+@Sql("classpath:init-data.sql")
+class UserRegisterIntTestUsingSql {
 
-    @Test
-    fun dateFormat() {
-        val date = LocalDate.of(1945, 8, 15)
-        val dateStr = formatDate(date)
-        val expected = "1945년8월15일"
-        assertEquals(expected, dateStr)
-    }
+    @Autowired
+    private lateinit var register: UserRegister
 
-    fun formatDate(date: LocalDate): String {
-        return "${date.year}년${date.monthValue.toString().padStart(2, '0')}월${date.dayOfMonth.toString().padStart(2, '0')}일"
-    }
-
-    val answers = listOf(1, 2, 3, 4)
-    val respondentId = 100L
-    private val surveyRepository = object : SurveyRepository {
-        override fun save(survey: Survey) = survey
-    }
-
-    private val surveyAnswerRepository = object : SurveyAnswerRepository {
-        override fun findBySurveyAndRespondent(surveyId: Long, respondentId: Long) =
-            SurveyAnswer(surveyId, respondentId, listOf(1, 2, 3, 4))
-    }
-    private val svc = SurveyService(surveyRepository, surveyAnswerRepository)
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
 
     @Test
-    @DisplayName("답변에 성공하면 결과 저장함")
-    fun saveAnswerSuccessfully() {
-        // 답변할 설문이 존재
-        val survey = SurveyFactory.createApprovedSurvey(1L)
-        surveyRepository.save(survey)
+    fun `동일ID가_이미_존재하면_익셉션()`() {
+        // 실행, 결과 확인
+        assertThrows<DupIdException> {
+            register.register("cbk", "strongpw", "email@email.com")
+        }
+    }
 
-        // 설문 답변
-        val surveyAnswer = SurveyAnswerRequest(
-            surveyId = 1L,
-            respondentId = 100L,
-            answers = listOf(1, 2, 3, 4)
+    @Test
+    fun `존재하지_않으면_저장함()`() {
+        // 실행
+        register.register("cbk2", "strongpw", "email@email.com")
+
+        // 결과 확인
+        val count = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM user WHERE id = ?",
+            Int::class.java,
+            "cbk2"
         )
-        svc.answerSurvey(surveyAnswer)
-
-        // 저장 결과 확인
-        val savedAnswer = surveyAnswerRepository.findBySurveyAndRespondent(1L, 100L)
-        assertAll(
-            { assertEquals(100L, savedAnswer?.respondentId) },
-            { assertEquals(4, savedAnswer?.answers?.size) },
-            { assertEquals(1, savedAnswer?.answers?.get(0)) },
-            { assertEquals(2, savedAnswer?.answers?.get(1)) },
-            { assertEquals(3, savedAnswer?.answers?.get(2)) },
-            { assertEquals(4, savedAnswer?.answers?.get(3)) }
-        )
+        assert(count == 1)
     }
-
-    private val fakeRepository = FakeUserRepository()
-    private val mockEmailNotifier = mock(EmailNotifier::class.java)
-    private val userRegister = UserRegister(fakeRepository, mockEmailNotifier)
-
-
-    @Test
-    @DisplayName("같은 ID가 없으면 가입에 성공하고 메일을 전송함")
-    fun registerAndSendMail() {
-        userRegister.register("id", "pw", "email")
-
-        // 검증 1: 회원 데이터가 올바르게 저장되었는지 검증
-        val savedUser = fakeRepository.findById("id")!!
-        assertEquals("id", savedUser.id)
-        assertEquals("email", savedUser.email)
-
-        // 검증 2: 이메일 발송을 요청했는지 검증
-        val captor = ArgumentCaptor.forClass(String::class.java)
-        BDDMockito.then(mockEmailNotifier).should().sendRegisteredEmail(captor.capture())
-
-        val realEmail = captor.value
-        assertEquals("email@email.com", realEmail)
-    }
-
-    @Test
-    @DisplayName("같은 ID가 없으면 가입 성공함")
-    fun noDupId_RegisterSuccess() {
-        userRegister.register("id", "pw", "email")
-
-        val savedUser = fakeRepository.findById("id")!!
-        assertEquals("id", savedUser.id)
-        assertEquals("email", savedUser.email)
-    }
-
-    @Test
-    @DisplayName("가입하면 메일을 전송함")
-    fun whenRegisterThenSendEmail() {
-        userRegister.register("id", "pw", "email")
-
-        val captor = ArgumentCaptor.forClass(String::class.java)
-        then(mockEmailNotifier).should().sendRegisteredEmail(captor.capture())
-
-        val realEmail = captor.value
-        assertEquals("email@email.com", realEmail)
-    }
-
-//    @Test
-//    @DisplayName("약한 암호면 가입 실패")
-//    fun weakPassword() {
-//        BDDMockito.given(mockPasswordChecker.checkPasswordWeak(Mockito.anyString()))
-//            .willReturn(true)
-//
-//        assertThrows<WeakPasswordException> { userRegister.register("id", "pw", "email") }
-//    }
-
-//    // 과도하게 구현 검증하지 않기
-//    @Test
-//    @DisplayName("회원 가입시 암호 검사 수행함")
-//    fun checkPassword() {
-//        userRegister.register("id", "pw", "email")
-//
-//        // PasswordChecker#checkPasswordWeak() 메서드 호출 여부 검사
-//        BDDMockito.then(mockPasswordChecker)
-//            .should()
-//            .checkPasswordWeak(Mockito.anyString())
-//
-//        // UserRepository#findById() 메서드를 호출하지 않는 것을 검사
-//        BDDMockito.then(mockRepository)
-//            .should(Mockito.never())
-//            .findById(Mockito.anyString())
-//    }
-
 }
+
+// These classes are assumed to exist in your codebase
+class UserRegister {
+    fun register(id: String, password: String, email: String) {
+        // Implementation details
+    }
+}
+
+class DupIdException : RuntimeException()
